@@ -1,0 +1,43 @@
+# Azure DevOps pipeline for Azure deployment
+
+variables:
+- group: terraform-ws
+
+trigger:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - 2021-05-11-ADO/vnet
+    
+stages:
+  - stage: Validate
+    displayName: Validate
+    jobs:
+    - job: validate
+      pool:
+        vmImage: ubuntu-latest
+      steps:
+      - task: TerraformInstaller@0
+        displayName: Install Terraform
+        inputs:
+          terraformVersion: 'latest'
+  
+    # Init
+      - task: TerraformCLI@0
+        displayName: Initialize Terraform
+        env:
+          ARM_SAS_TOKEN: $(sas_token)
+        inputs:
+          command: 'init'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/azure'
+          commandOptions: '-backend-config=storage_account_name=$(storageaccount) -backend-config=container_name=$(container_name) -backend-config=key=$(key)'
+          backendType: 'selfConfigured'
+  
+    # Validate
+      - task: TerraformCLI@0
+        displayName: Validate Config
+        inputs:
+          command: 'validate'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/azure'
